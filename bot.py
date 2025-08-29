@@ -188,7 +188,7 @@ intents.messages = True
 intents.guilds = True
 intents.members = True
 intents.message_content = True
-intents.manage_roles = True
+#intents.manage_roles = True
 
 activity = discord.Game(name="with your feelings")
 client = MyClient(intents=intents, activity=activity)
