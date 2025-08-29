@@ -171,7 +171,7 @@ class MyClient(discord.Client):
             return
 
         # If the bot is mentioned or it's a reply to the bot
-        if self.user in message.mentions or (message.reference and message.reference.resolved.author == self.user):
+        if self.user in message.mentions or (message.reference and message.reference.resolved and message.reference.resolved.author == self.user):
             # Q&A functionality
             keywords = ['?', 'bemani', 'ddr', 'beatmania', 'iidx', 'round1']
             random_keywords = ['fact', 'random']
