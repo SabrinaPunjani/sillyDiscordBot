@@ -1,0 +1,10 @@
+{
+    "token": "YOUR_DISCORD_BOT_TOKEN_HERE",
+    "server_id": "YOUR_SERVER_ID_HERE",
+    "channel_ids": [
+        "CHANNEL_ID_1",
+        "CHANNEL_ID_2"
+    ],
+    "min_posts_per_day": 4,
+    "max_posts_per_day": 14
+}
