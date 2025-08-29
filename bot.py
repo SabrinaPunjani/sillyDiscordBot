@@ -55,6 +55,73 @@ class MyClient(discord.Client):
                 print(f"An error occurred: {e}")
                 await asyncio.sleep(60) # Wait a bit before retrying
 
+    async def on_message(self, message):
+        # Don't reply to ourselves
+        if message.author == self.user:
+            return
+
+        # Role assignment logic
+        words = message.content.lower().split()
+        if len(words) > 1 and (words[0] == 'color' or words[0] == 'country'):
+            role_name = words[1]
+            guild = message.guild
+
+            if not guild.me.guild_permissions.manage_roles:
+                await message.channel.send("I don't have the `manage_roles` permission.")
+                return
+
+            # Check if role already exists
+            role = discord.utils.get(guild.roles, name=role_name)
+
+            if not role:
+                try:
+                    color = discord.Color.default()
+                    if words[0] == 'color':
+                        try:
+                            color = getattr(discord.Color, words[1])()
+                        except AttributeError:
+                            await message.channel.send(f"Sorry, I don't know the color {role_name}.")
+                            return
+                    elif words[0] == 'country':
+                        color = discord.Color.random()
+
+                    role = await guild.create_role(name=role_name, color=color, permissions=discord.Permissions.none())
+                    await message.channel.send(f"Created the {role_name} role for you!")
+
+                except discord.Forbidden:
+                    await message.channel.send("I don't have permission to create roles.")
+                    return
+                except Exception as e:
+                    print(f"Error creating role: {e}")
+                    await message.channel.send("Something went wrong while creating the role.")
+                    return
+
+            # Assign the role
+            try:
+                await message.author.add_roles(role)
+                await message.channel.send(f"You now have the {role_name} role!")
+            except discord.Forbidden:
+                await message.channel.send("I don't have permission to assign roles.")
+            except Exception as e:
+                print(f"Error assigning role: {e}")
+                await message.channel.send("Something went wrong while assigning the role.")
+            return
+
+        # If the bot is mentioned or it's a reply to the bot
+        if self.user in message.mentions or (message.reference and message.reference.resolved.author == self.user):
+            reply_message = random.choice(messages)
+            await message.channel.send(reply_message)
+            print(f"Replied to {message.author} in #{message.channel.name}: {reply_message}")
+
 intents = discord.Intents.default()
-client = MyClient(intents=intents)
+intents.presences = True
+intents.messages = True
+intents.guilds = True
+intents.members = True
+intents.message_content = True
+intents.manage_roles = True
+
+activity = discord.Game(name="with your feelings")
+client = MyClient(intents=intents, activity=activity)
+
 client.run(TOKEN)
