@@ -2,22 +2,9 @@ import discord
 import random
 import asyncio
 import json
-
-# Load configuration
-with open('config.json') as config_file:
-    config = json.load(config_file)
-
-TOKEN = config['token']
-SERVER_ID = int(config['server_id'])
-MIN_DELAY = 3600 * 24 / config['max_posts_per_day'] # 4 posts -> 6 hours
-MAX_DELAY = 3600 * 24 / config['min_posts_per_day'] # 14 posts -> ~1.7 hours
-
-import discord
-import random
-import asyncio
-import json
 import requests
 from bs4 import BeautifulSoup
+import difflib
 
 # Load configuration
 with open('config.json') as config_file:
@@ -39,33 +26,53 @@ async def search_remywiki(query):
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Find the first search result link
         search_results = soup.find('div', class_='searchresults')
         if not search_results:
             return "No search results found on remywiki.com."
 
-        first_result = search_results.find('a')
-        if not first_result or 'href' not in first_result.attrs:
+        results = {a.get_text(): a['href'] for a in search_results.find_all('a') if a.get_text() and a.has_attr('href')}
+        if not results:
             return "No valid search results found."
 
-        page_url = f"https://remywiki.com{first_result['href']}"
+        titles = list(results.keys())
+        best_match = difflib.get_close_matches(query, titles, n=1, cutoff=0.6)
 
-        # Get the content of the page
+        if not best_match:
+            return f"I couldn't find a good match for '{query}' on remywiki.com."
+
+        page_url = f"https://remywiki.com{results[best_match[0]]}"
+
         page_response = await asyncio.to_thread(requests.get, page_url)
         page_response.raise_for_status()
         page_soup = BeautifulSoup(page_response.text, 'html.parser')
 
-        # Extract the main content
         content_div = page_soup.find('div', id='mw-content-text')
         if not content_div:
             return "Could not find content on the page."
 
-        # Get the first few paragraphs
         paragraphs = content_div.find_all('p', limit=3)
         if not paragraphs:
             return "No paragraphs found on the page."
 
         return '\n'.join([p.get_text() for p in paragraphs])
+
+    except requests.exceptions.RequestException as e:
+        return f"Error accessing remywiki.com: {e}"
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+async def get_random_remywiki_page():
+    random_url = "https://remywiki.com/Special:Random"
+    try:
+        response = await asyncio.to_thread(requests.get, random_url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        title = soup.find('h1', id='firstHeading').get_text()
+        content_div = soup.find('div', id='mw-content-text')
+        first_paragraph = content_div.find('p').get_text()
+
+        return f"**{title}**\n{first_paragraph}\n\n{response.url}"
 
     except requests.exceptions.RequestException as e:
         return f"Error accessing remywiki.com: {e}"
@@ -167,6 +174,7 @@ class MyClient(discord.Client):
         if self.user in message.mentions or (message.reference and message.reference.resolved.author == self.user):
             # Q&A functionality
             keywords = ['?', 'bemani', 'ddr', 'beatmania', 'iidx', 'round1']
+            random_keywords = ['fact', 'random']
             if any(keyword in message.content.lower() for keyword in keywords):
                 try:
                     await message.channel.send("Let me check remywiki.com for you...")
@@ -176,6 +184,15 @@ class MyClient(discord.Client):
                 except Exception as e:
                     print(f"Error during web fetch: {e}")
                     await message.channel.send("Sorry, I couldn't fetch the information.")
+                return
+            elif any(keyword in message.content.lower() for keyword in random_keywords):
+                try:
+                    await message.channel.send("Getting a random page from remywiki.com for you...")
+                    response = await get_random_remywiki_page()
+                    await message.channel.send(response)
+                except Exception as e:
+                    print(f"Error during random page fetch: {e}")
+                    await message.channel.send("Sorry, I couldn't fetch a random page.")
                 return
 
             reply_message = random.choice(messages)
@@ -190,7 +207,7 @@ intents.members = True
 intents.message_content = True
 #intents.manage_roles = True
 
-activity = discord.Game(name="with your feelings")
+activity = discord.Game(name="ask me a question about BEMANI")
 client = MyClient(intents=intents, activity=activity)
 
 client.run(TOKEN)
