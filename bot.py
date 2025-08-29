@@ -12,9 +12,65 @@ SERVER_ID = int(config['server_id'])
 MIN_DELAY = 3600 * 24 / config['max_posts_per_day'] # 4 posts -> 6 hours
 MAX_DELAY = 3600 * 24 / config['min_posts_per_day'] # 14 posts -> ~1.7 hours
 
+import discord
+import random
+import asyncio
+import json
+import requests
+from bs4 import BeautifulSoup
+
+# Load configuration
+with open('config.json') as config_file:
+    config = json.load(config_file)
+
+TOKEN = config['token']
+SERVER_ID = int(config['server_id'])
+MIN_DELAY = 3600 * 24 / config['max_posts_per_day'] # 4 posts -> 6 hours
+MAX_DELAY = 3600 * 24 / config['min_posts_per_day'] # 14 posts -> ~1.7 hours
+
 # Load messages
 with open('messages.txt', 'r') as f:
     messages = [line.strip() for line in f if line.strip()]
+
+async def search_remywiki(query):
+    search_url = f"https://remywiki.com/index.php?search={query}"
+    try:
+        response = await asyncio.to_thread(requests.get, search_url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Find the first search result link
+        search_results = soup.find('div', class_='searchresults')
+        if not search_results:
+            return "No search results found on remywiki.com."
+
+        first_result = search_results.find('a')
+        if not first_result or 'href' not in first_result.attrs:
+            return "No valid search results found."
+
+        page_url = f"https://remywiki.com{first_result['href']}"
+
+        # Get the content of the page
+        page_response = await asyncio.to_thread(requests.get, page_url)
+        page_response.raise_for_status()
+        page_soup = BeautifulSoup(page_response.text, 'html.parser')
+
+        # Extract the main content
+        content_div = page_soup.find('div', id='mw-content-text')
+        if not content_div:
+            return "Could not find content on the page."
+
+        # Get the first few paragraphs
+        paragraphs = content_div.find_all('p', limit=3)
+        if not paragraphs:
+            return "No paragraphs found on the page."
+
+        return '\n'.join([p.get_text() for p in paragraphs])
+
+    except requests.exceptions.RequestException as e:
+        return f"Error accessing remywiki.com: {e}"
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -109,6 +165,19 @@ class MyClient(discord.Client):
 
         # If the bot is mentioned or it's a reply to the bot
         if self.user in message.mentions or (message.reference and message.reference.resolved.author == self.user):
+            # Q&A functionality
+            keywords = ['?', 'bemani', 'ddr', 'beatmania', 'iidx', 'round1']
+            if any(keyword in message.content.lower() for keyword in keywords):
+                try:
+                    await message.channel.send("Let me check remywiki.com for you...")
+                    query = message.content.replace(f'<@!{self.user.id}>', '').strip()
+                    response = await search_remywiki(query)
+                    await message.channel.send(response)
+                except Exception as e:
+                    print(f"Error during web fetch: {e}")
+                    await message.channel.send("Sorry, I couldn't fetch the information.")
+                return
+
             reply_message = random.choice(messages)
             await message.channel.send(reply_message)
             print(f"Replied to {message.author} in #{message.channel.name}: {reply_message}")
