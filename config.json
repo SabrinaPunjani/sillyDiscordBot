@@ -3,5 +3,6 @@
     "server_id": "1371677747310624888",
     "min_posts_per_day": 4,
     "max_posts_per_day": 14,
-    "user_id": 281945549937049600
+    "user_id": 281945549937049600,
+    "allowed_channels": []
 }
