@@ -9,10 +9,17 @@ with open('config.json') as config_file:
     config = json.load(config_file)
 
 # -------------------------
-TOKEN = config['token']  # Replace with your bot token
-GUILD_ID = int(config['server_id']) # Replace with your server (guild) ID
-TARGET_USER_ID = 281945549937049600  # Replace with target user ID
+TOKEN = config.get('token')
+GUILD_ID = config.get('server_id')
+TARGET_USER_ID = config.get('user_id')
 OUTPUT_FILE = "messages.txt"
+
+if not all([TOKEN, GUILD_ID, TARGET_USER_ID]):
+    print("Error: 'token', 'server_id', and 'user_id' must be set in config.json")
+    exit()
+
+GUILD_ID = int(GUILD_ID)
+TARGET_USER_ID = int(TARGET_USER_ID)
 # -------------------------
 
 intents = discord.Intents.default()
