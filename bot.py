@@ -131,10 +131,6 @@ class MyClient(discord.Client):
         if message.author == self.user:
             return
 
-        # If the channel is not in the allowed list, ignore the message
-        if self.allowed_channel_ids and message.channel.id not in self.allowed_channel_ids:
-            return
-
         # Role assignment logic
         words = message.content.lower().split()
         if len(words) > 1 and (words[0] == 'color' or words[0] == 'country'):
