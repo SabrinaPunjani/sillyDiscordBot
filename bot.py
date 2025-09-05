@@ -82,6 +82,7 @@ async def get_random_remywiki_page():
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.allowed_channel_ids = [int(ch_id) for ch_id in config.get('allowed_channels', [])]
         self.all_channels = []
 
     async def on_ready(self):
@@ -89,8 +90,15 @@ class MyClient(discord.Client):
         
         guild = self.get_guild(SERVER_ID)
         if guild:
-            self.all_channels = [ch for ch in guild.text_channels if ch.permissions_for(guild.me).send_messages]
-            print(f"Found {len(self.all_channels)} channels to post in.")
+            if not self.allowed_channel_ids:
+                print("Warning: 'allowed_channels' is empty in config.json. The bot will not send messages to any channel.")
+            
+            self.all_channels = [ch for ch in guild.text_channels if ch.id in self.allowed_channel_ids and ch.permissions_for(guild.me).send_messages]
+            
+            if self.all_channels:
+                print(f"Found {len(self.all_channels)} allowed channels to post in: {[ch.name for ch in self.all_channels]}")
+            else:
+                print("Could not find any of the allowed channels on this server, or I don't have permissions to send messages in them.")
         else:
             print(f"Could not find server with ID {SERVER_ID}. Bot will not send messages.")
 
@@ -121,6 +129,10 @@ class MyClient(discord.Client):
     async def on_message(self, message):
         # Don't reply to ourselves
         if message.author == self.user:
+            return
+
+        # If the channel is not in the allowed list, ignore the message
+        if self.allowed_channel_ids and message.channel.id not in self.allowed_channel_ids:
             return
 
         # Role assignment logic
@@ -168,6 +180,32 @@ class MyClient(discord.Client):
             except Exception as e:
                 print(f"Error assigning role: {e}")
                 await message.channel.send("Something went wrong while assigning the role.")
+            return
+        elif len(words) > 1 and words[0] == 'remove':
+            role_name = words[1]
+            guild = message.guild
+            role = discord.utils.get(guild.roles, name=role_name)
+
+            if not guild.me.guild_permissions.manage_roles:
+                await message.channel.send("I don't have the `manage_roles` permission.")
+                return
+
+            if not role:
+                await message.channel.send(f"The role {role_name} doesn't exist.")
+                return
+
+            if role not in message.author.roles:
+                await message.channel.send(f"You don't have the {role_name} role.")
+                return
+
+            try:
+                await message.author.remove_roles(role)
+                await message.channel.send(f"Removed the {role_name} role.")
+            except discord.Forbidden:
+                await message.channel.send("I don't have permission to remove roles.")
+            except Exception as e:
+                print(f"Error removing role: {e}")
+                await message.channel.send("Something went wrong while removing the role.")
             return
 
         # If the bot is mentioned or it's a reply to the bot
