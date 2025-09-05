@@ -7,7 +7,7 @@ This Discord bot will scrape all of a specified users messages in a server then 
 <img width="302" height="130" alt="image" src="https://github.com/user-attachments/assets/74c2d679-1391-4f96-8c8b-bdb33f2bfe66" />
 
 ## usage:
-Add bot to server and give correct permissions (you will need to replace client id with your id): https://discord.com/oauth2/authorize?client_id=1410794835769823234 <br>
+Add bot to server and give correct permissions (you will need to replace client_id=x with your id): https://discord.com/oauth2/authorize?client_id=x <br>
 edit config.json to your values <br>
 run scraper.py to get the users messages (needs to be scheduled or run periodically) <br>
 run bot.py (must always be running for bot to be alive) <br>
