@@ -35,7 +35,7 @@ async def search_remywiki(query):
             return "No valid search results found."
 
         titles = list(results.keys())
-        best_match = difflib.get_close_matches(query, titles, n=1, cutoff=0.6)
+        best_match = difflib.get_close_matches(query, titles, n=1, cutoff=0.4)
 
         if not best_match:
             return f"I couldn't find a good match for '{query}' on remywiki.com."
