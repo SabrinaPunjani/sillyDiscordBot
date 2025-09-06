@@ -1,0 +1,3 @@
+[submodule "submodule/IIDX_dan_courses"]
+	path = submodule/IIDX_dan_courses
+	url = https://github.com/SabrinaPunjani/IIDX_dan_courses
