@@ -5,6 +5,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 import difflib
+from submodule.IIDX_dan_courses.courses import dan_courses_sp, dan_courses_dp
 
 # Load configuration
 with open('config.json') as config_file:
@@ -130,6 +131,92 @@ class MyClient(discord.Client):
         # Don't reply to ourselves
         if message.author == self.user:
             return
+
+        if message.content.startswith('!dan'):
+            source_link = "\nSource: https://remywiki.com/Beatmania_IIDX_Dan_Courses"
+            try:
+                parts = message.content.split('"', 2)
+                if len(parts) < 3:
+                    await message.channel.send(f"Usage: `!dan <sp/dp> \"<dan course>\" \"<game>\"`{source_link}")
+                    return
+
+                command_parts = parts[0].strip().split()
+                if len(command_parts) != 2:
+                    await message.channel.send(f"Usage: `!dan <sp/dp> \"<dan course>\" \"<game>\"`{source_link}")
+                    return
+                
+                play_style = command_parts[1].lower()
+                dan_course_input = parts[1]
+                game_input = parts[2].strip().strip('"')
+
+
+                if play_style not in ['sp', 'dp']:
+                    await message.channel.send(f"Invalid play style. Please use 'sp' or 'dp'.{source_link}")
+                    return
+
+                course_data = dan_courses_sp if play_style == 'sp' else dan_courses_dp
+
+                # Case-insensitive dan course matching
+                matched_dan_course = None
+                for key in course_data.keys():
+                    if key.lower() == dan_course_input.lower():
+                        matched_dan_course = key
+                        break
+
+                if not matched_dan_course:
+                    # Find closest match
+                    lower_keys = [k.lower() for k in course_data.keys()]
+                    closest_dan = difflib.get_close_matches(dan_course_input.lower(), lower_keys, n=1, cutoff=0.6)
+                    if closest_dan:
+                        # Find the original cased key
+                        for k in course_data.keys():
+                            if k.lower() == closest_dan[0]:
+                                await message.channel.send(f"Dan course '{dan_course_input}' not found. Did you mean '{k}'?{source_link}")
+                                return
+                    else:
+                        await message.channel.send(f"Dan course '{dan_course_input}' not found.{source_link}")
+                    return
+                
+                # Partial and case-insensitive game matching
+                matched_game = None
+                game_keys = course_data[matched_dan_course].keys()
+                
+                # Exact match first
+                for key in game_keys:
+                    if key.lower() == game_input.lower():
+                        matched_game = key
+                        break
+                
+                # Then startswith match
+                if not matched_game:
+                    for key in game_keys:
+                        if key.lower().startswith(game_input.lower()):
+                            matched_game = key
+                            break
+
+                if not matched_game:
+                    lower_game_keys = [k.lower() for k in game_keys]
+                    closest_game = difflib.get_close_matches(game_input.lower(), lower_game_keys, n=1, cutoff=0.6)
+                    if closest_game:
+                        for k in game_keys:
+                            if k.lower() == closest_game[0]:
+                                await message.channel.send(f"Game '{game_input}' not found for {matched_dan_course}. Did you mean '{k}'?{source_link}")
+                                return
+                    else:
+                        await message.channel.send(f"Game '{game_input}' not found for {matched_dan_course}.{source_link}")
+                    return
+
+                song_list = course_data[matched_dan_course][matched_game]
+                response = f"**{matched_dan_course} ({play_style.upper()}) - {matched_game}**\n"
+                for i, song in enumerate(song_list):
+                    response += f"{i+1}. {song}\n"
+                
+                await message.channel.send(f"{response}{source_link}")
+                return
+            except Exception as e:
+                print(f"Error processing !dan command: {e}")
+                await message.channel.send(f"An error occurred while processing the command.{source_link}")
+                return
 
         # Role assignment logic
         words = message.content.lower().split()
