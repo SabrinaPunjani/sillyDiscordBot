@@ -5,6 +5,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 import difflib
+import re
 from submodule.IIDX_dan_courses.courses import dan_courses_sp, dan_courses_dp
 
 # Load configuration
@@ -135,24 +136,13 @@ class MyClient(discord.Client):
         if message.content.startswith('!dan'):
             source_link = "\nSource: https://remywiki.com/Beatmania_IIDX_Dan_Courses"
             try:
-                parts = message.content.split('"', 2)
-                if len(parts) < 3:
-                    await message.channel.send(f"Usage: `!dan <sp/dp> \"<dan course>\" \"<game>\"`{source_link}")
+                match = re.match(r'^!dan(?:\s+(sp|dp))?\s+\"([^\"]+)\"\s+\"([^\"]+)\"$', message.content, re.IGNORECASE)
+                if not match:
+                    await message.channel.send(f"Usage: `!dan [sp/dp] \"<dan course>\" \"<game>\"`{source_link}")
                     return
 
-                command_parts = parts[0].strip().split()
-                if len(command_parts) != 2:
-                    await message.channel.send(f"Usage: `!dan <sp/dp> \"<dan course>\" \"<game>\"`{source_link}")
-                    return
-                
-                play_style = command_parts[1].lower()
-                dan_course_input = parts[1]
-                game_input = parts[2].strip().strip('"')
-
-
-                if play_style not in ['sp', 'dp']:
-                    await message.channel.send(f"Invalid play style. Please use 'sp' or 'dp'.{source_link}")
-                    return
+                play_style_input, dan_course_input, game_input = match.groups()
+                play_style = play_style_input.lower() if play_style_input else 'sp'
 
                 course_data = dan_courses_sp if play_style == 'sp' else dan_courses_dp
 
