@@ -2,8 +2,7 @@
 
 This Discord bot will scrape all of a specified users messages in a server then talk like them in channels of your choice. They will also talk back when mentioned or replied in any channel. Have one user who is so annoying, why not make two of them? Now they can also see how annoying they are
 
-## sample:
-<img width="428" height="1092" alt="image" src="https://github.com/user-attachments/assets/0c21a4ed-50e2-4c2b-9fed-104cd0a750ed" /> <br>
+
 <img width="302" height="130" alt="image" src="https://github.com/user-attachments/assets/74c2d679-1391-4f96-8c8b-bdb33f2bfe66" />
 
 ## commands
