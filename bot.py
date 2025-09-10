@@ -133,6 +133,10 @@ class MyClient(discord.Client):
         if message.author == self.user:
             return
 
+        if message.content.startswith('!daquan'):
+            await message.channel.send("<:daquan:1379633390260850718>")
+            return
+
         if message.content.startswith('!dan'):
             source_link = "\nSource: https://remywiki.com/Beatmania_IIDX_Dan_Courses"
             try:
