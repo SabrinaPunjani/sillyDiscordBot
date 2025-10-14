@@ -30,6 +30,6 @@ def getRng():
                         
                     rng.append([title, rate])
     index = random.randint(0, len(rng))
-    ans = "Hmm, how about try playing " + str(rng[index][0]) + ", you can try the singles" + str(rng[index][1][0])  + " or maybe "  + str(rng[index][1][1]) + " if ya feeling quirky, gl gamer! >:)"
+    ans = "Hmm, how about try playing " + str(rng[index][0]) + ", you can try the singles " + str(rng[index][1][0])  + " or maybe "  + str(rng[index][1][1]) + " if ya feeling quirky, gl gamer! >:)"
     return ans
 
