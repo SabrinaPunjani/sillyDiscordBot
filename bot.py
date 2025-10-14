@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import difflib
 import re
 from submodule.IIDX_dan_courses.courses import dan_courses_sp, dan_courses_dp
+from rngddr import getRng
 
 # Load configuration
 with open('config.json') as config_file:
@@ -135,6 +136,10 @@ class MyClient(discord.Client):
 
         if message.content.startswith('!daquan'):
             await message.channel.send("<:daquan:1379633390260850718>")
+            return
+        
+        if message.content.startswith('!ddr'):
+            await message.channel.send(getRng())
             return
 
         if message.content.startswith('!dan'):
